@@ -1,0 +1,57 @@
+{
+    "schema": "fullbleed.template_registry.v1",
+    "registry": {
+        "name": "fullbleed-community-templates",
+        "homepage": "https://github.com/<org>/<repo>",
+        "generated_at": "2026-02-17T00:00:00Z"
+    },
+    "templates": [
+        {
+            "id": "i9-stamped-vdp",
+            "name": "I-9 Stamped VDP",
+            "summary": "Per-record overlay + PDF template composition with conditional back pages.",
+            "description": "Production-ready Fullbleed project template for high-volume VDP jobs.",
+            "tags": [
+                "vdp",
+                "transactional",
+                "templating",
+                "duplex",
+                "pdf"
+            ],
+            "license": "AGPL-3.0-only OR LicenseRef-Fullbleed-Commercial",
+            "maintainer": "fullbleed-engine",
+            "homepage": "https://github.com/<org>/<repo>/tree/main/templates/i9-stamped-vdp",
+            "latest": "1.0.0",
+            "releases": [
+                {
+                    "version": "1.0.0",
+                    "published_at": "2026-02-17T00:00:00Z",
+                    "fullbleed_version_range": ">=0.1.12",
+                    "python_version_range": ">=3.10",
+                    "archive": {
+                        "url": "https://github.com/<org>/<repo>/releases/download/i9-stamped-vdp-v1.0.0/i9-stamped-vdp-v1.0.0.zip",
+                        "format": "zip",
+                        "sha256": "<sha256-hex>",
+                        "size_bytes": 123456,
+                        "root_dir": "i9-stamped-vdp"
+                    },
+                    "entrypoints": {
+                        "readme": "README.md",
+                        "run": "report.py"
+                    },
+                    "assets": {
+                        "lock_file": "assets.lock.json",
+                        "vendor_included": true
+                    },
+                    "checks": {
+                        "smoke_command": "python report.py",
+                        "expected_outputs": [
+                            "output/report.pdf"
+                        ]
+                    },
+                    "deprecated": false
+                }
+            ]
+        }
+    ]
+}
