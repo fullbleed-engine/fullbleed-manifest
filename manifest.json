@@ -18,9 +18,9 @@
                 "duplex",
                 "pdf"
             ],
-            "license": "AGPL-3.0-only OR LicenseRef-Fullbleed-Commercial",
+            "license": "MIT",
             "maintainer": "fullbleed-engine",
-            "homepage": "https://github.com/<org>/<repo>/tree/main/templates/i9-stamped-vdp",
+            "homepage": "https://github.com/fullbleed-engine/fullbleed-manifest/tree/main/templates/i9-stamped-vdp",
             "latest": "1.0.0",
             "releases": [
                 {
@@ -31,8 +31,8 @@
                     "archive": {
                         "url": "https://github.com/fullbleed-engine/fullbleed-manifest/blob/master/i9-stamped-vdp-v1.0.0.zip",
                         "format": "zip",
-                        "sha256": "<sha256-hex>",
-                        "size_bytes": 123456,
+                        "sha256": "03fde3536185cd833176fc87e45c97b9c438188461cebdb37a2fd17040a1886e",
+                        "size_bytes": 1221140,
                         "root_dir": "i9-stamped-vdp"
                     },
                     "entrypoints": {
