@@ -29,7 +29,7 @@
                     "fullbleed_version_range": ">=0.1.12",
                     "python_version_range": ">=3.10",
                     "archive": {
-                        "url": "https://github.com/fullbleed-engine/fullbleed-manifest/master/i9-stamped-vdp-v1.0.0.zip",
+                        "url": "https://raw.githubusercontent.com/fullbleed-engine/fullbleed-manifest/master/i9-stamped-vdp-v1.0.0.zip",
                         "format": "zip",
                         "sha256": "03fde3536185cd833176fc87e45c97b9c438188461cebdb37a2fd17040a1886e",
                         "size_bytes": 1221140,
