@@ -2,7 +2,7 @@
     "schema": "fullbleed.template_registry.v1",
     "registry": {
         "name": "fullbleed-community-templates",
-        "homepage": "https://github.com/<org>/<repo>",
+        "homepage": "https://github.com/fullbleed-engine/fullbleed-manifest",
         "generated_at": "2026-02-17T00:00:00Z"
     },
     "templates": [
