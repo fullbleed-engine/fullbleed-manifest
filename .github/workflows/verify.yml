@@ -1,0 +1,42 @@
+name: Verify templates
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: templates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  templates:
+    name: Templates (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.10', '3.14']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the exact projects and render their examples
+        run: python tools/verify_registry.py --out output/verification
+      - name: Retain installed-project verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: templates-${{ matrix.os }}-python-${{ matrix.python }}
+          path: |
+            output/verification/*.json
+            output/verification/logs
+            output/verification/evidence
+            output/verification/alpha/component-showcase/output
+          if-no-files-found: error
