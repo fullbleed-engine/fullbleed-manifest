@@ -3,13 +3,13 @@
   "registry": {
     "name": "fullbleed-community-templates",
     "homepage": "https://github.com/fullbleed-engine/fullbleed-manifest",
-    "generated_at": "2026-10-18T06:43:21.076636+00:00"
+    "generated_at": "2026-10-18T15:35:13.947550+00:00"
   },
   "templates": [
     {
       "id": "python-components",
       "name": "Python components (experimental)",
-      "summary": "Create a styled order PDF and HTML exports with the opt-in Fullbleed 2.6.0a5 alpha.",
+      "summary": "Create a styled order PDF and HTML exports with the opt-in Fullbleed 2.6.0a6 alpha.",
       "description": "A first document, reusable Bootstrap components, typed table columns, a report and a static component catalog. Requires the exact experimental Python runtime in requirements.txt.",
       "tags": [
         "python",
@@ -21,7 +21,7 @@
       "license": "MIT",
       "maintainer": "fullbleed-engine",
       "homepage": "https://docs.fullbleed.dev/guides/bootstrap-components-preview/",
-      "latest": "0.1.1",
+      "latest": "0.1.2",
       "releases": [
         {
           "version": "0.1.0",
@@ -80,13 +80,42 @@
             ]
           },
           "deprecated": false
+        },
+        {
+          "version": "0.1.2",
+          "published_at": "2026-10-18T15:35:13.947550+00:00",
+          "experimental": true,
+          "fullbleed_version_range": "==2.6.0a6",
+          "python_version_range": ">=3.10",
+          "archive": {
+            "url": "https://raw.githubusercontent.com/fullbleed-engine/docs/5e9d9e665c3a3a81d3d5273f77e1ae9d56cc6224/docs/assets/bootstrap-alpha6/project.zip",
+            "format": "zip",
+            "sha256": "eeedc7bcfa711526c1e5d38fe340d27be27c5707711eeef5227fba3891bf3716",
+            "size_bytes": 13074,
+            "root_dir": "fullbleed-bootstrap-alpha6"
+          },
+          "entrypoints": {
+            "readme": "README.md",
+            "requirements": "requirements.txt",
+            "run": "first_document.py",
+            "catalog": "examples/component_bootstrap/main.py"
+          },
+          "checks": {
+            "smoke_command": "python first_document.py",
+            "expected_outputs": [
+              "order.pdf",
+              "order.html",
+              "order.unstyled.html"
+            ]
+          },
+          "deprecated": false
         }
       ]
     },
     {
       "id": "component-showcase",
       "name": "Northstar and Common Ground (experimental)",
-      "summary": "Matching HTML/CSS and Python component designs, with a live PDF preview; requires Fullbleed 2.6.0a5.",
+      "summary": "Matching HTML/CSS and Python component designs, with a live PDF preview; requires Fullbleed 2.6.0a6.",
       "description": "Recreate the Northstar invoice and Common Ground report using either authoring path. Includes shared data, fonts, CSS, artwork, styled/unstyled HTML export and a local edit-and-preview helper. The component API is experimental.",
       "tags": [
         "python",
@@ -100,7 +129,7 @@
       "license": "MIT",
       "maintainer": "fullbleed-engine",
       "homepage": "https://docs.fullbleed.dev/guides/showcase-authoring/",
-      "latest": "0.1.1",
+      "latest": "0.1.2",
       "releases": [
         {
           "version": "0.1.0",
@@ -145,6 +174,37 @@
             "sha256": "77b62ca8cab8eae756120ac91018ea872088a4e9ea8b74e677a296b921e08936",
             "size_bytes": 347575,
             "root_dir": "fullbleed-showcase-authoring-alpha5"
+          },
+          "entrypoints": {
+            "readme": "README.md",
+            "requirements": "requirements.txt",
+            "run": "examples/design_showcase/compare_authoring.py",
+            "preview": "examples/design_showcase/preview.py"
+          },
+          "checks": {
+            "smoke_command": "python examples/design_showcase/compare_authoring.py --out output",
+            "expected_outputs": [
+              "output/comparison.json",
+              "output/html/invoice/invoice.pdf",
+              "output/components/invoice/invoice.pdf",
+              "output/html/report/report.pdf",
+              "output/components/report/report.pdf"
+            ]
+          },
+          "deprecated": false
+        },
+        {
+          "version": "0.1.2",
+          "published_at": "2026-10-18T15:35:13.947550+00:00",
+          "experimental": true,
+          "fullbleed_version_range": "==2.6.0a6",
+          "python_version_range": ">=3.10",
+          "archive": {
+            "url": "https://raw.githubusercontent.com/fullbleed-engine/docs/5e9d9e665c3a3a81d3d5273f77e1ae9d56cc6224/docs/assets/showcase-authoring-alpha6/project.zip",
+            "format": "zip",
+            "sha256": "778b31539e274db5f36fd07bbd1bd6de0d09c167d9f977c3bc17b5fccd40e526",
+            "size_bytes": 347575,
+            "root_dir": "fullbleed-showcase-authoring-alpha6"
           },
           "entrypoints": {
             "readme": "README.md",

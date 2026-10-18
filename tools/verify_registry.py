@@ -20,9 +20,10 @@ import urllib.request
 import venv
 import zipfile
 
-VERSIONS = {'stable': '2.5.31', 'alpha': '2.6.0a5'}
-ENGINE_PINS = {'0.1.0': '2.6.0a4', '0.1.1': VERSIONS['alpha']}
+VERSIONS = {'stable': '2.5.32', 'alpha': '2.6.0a6'}
+ENGINE_PINS = {'0.1.0': '2.6.0a4', '0.1.1': '2.6.0a5', '0.1.2': VERSIONS['alpha']}
 TEMPLATES = {'python-components', 'component-showcase'}
+HISTORICAL_RELEASES = {'python-components': {'0.1.0': {'version': '0.1.0', 'published_at': '2026-10-17T17:30:00Z', 'experimental': True, 'fullbleed_version_range': '==2.6.0a4', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/c7d54e374f6424512f650083664cf3103ef62884/docs/assets/bootstrap-alpha4/project.zip', 'format': 'zip', 'sha256': '00c8e79b056f13ba2a7d2ec3a254d3958d3f19dc1a3f7316edf7ac22e631f790', 'size_bytes': 12880, 'root_dir': 'fullbleed-bootstrap-alpha4'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'first_document.py', 'catalog': 'examples/component_bootstrap/main.py'}, 'checks': {'smoke_command': 'python first_document.py', 'expected_outputs': ['order.pdf', 'order.html', 'order.unstyled.html']}, 'deprecated': False}, '0.1.1': {'version': '0.1.1', 'published_at': '2026-10-18T06:43:21.076636+00:00', 'experimental': True, 'fullbleed_version_range': '==2.6.0a5', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/8379d89bd55757e43b8c7e36fc6e30a2b0f4f6da/docs/assets/bootstrap-alpha5/project.zip', 'format': 'zip', 'sha256': 'b47e4c34c51c649700848139562835544b7609844df7cd51d83f80ce64828581', 'size_bytes': 12970, 'root_dir': 'fullbleed-bootstrap-alpha5'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'first_document.py', 'catalog': 'examples/component_bootstrap/main.py'}, 'checks': {'smoke_command': 'python first_document.py', 'expected_outputs': ['order.pdf', 'order.html', 'order.unstyled.html']}, 'deprecated': False}}, 'component-showcase': {'0.1.0': {'version': '0.1.0', 'published_at': '2026-10-17T17:30:00Z', 'experimental': True, 'fullbleed_version_range': '==2.6.0a4', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/c7d54e374f6424512f650083664cf3103ef62884/docs/assets/showcase-authoring/project.zip', 'format': 'zip', 'sha256': 'a57fe4c7aa04c94979704edfa00328be67d6dba8bd8909e224e70229f246195e', 'size_bytes': 347085, 'root_dir': 'fullbleed-showcase-authoring'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'examples/design_showcase/compare_authoring.py', 'preview': 'examples/design_showcase/preview.py'}, 'checks': {'smoke_command': 'python examples/design_showcase/compare_authoring.py --out output', 'expected_outputs': ['output/comparison.json', 'output/html/invoice/invoice.pdf', 'output/components/invoice/invoice.pdf', 'output/html/report/report.pdf', 'output/components/report/report.pdf']}, 'deprecated': False}, '0.1.1': {'version': '0.1.1', 'published_at': '2026-10-18T06:43:21.076636+00:00', 'experimental': True, 'fullbleed_version_range': '==2.6.0a5', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/8379d89bd55757e43b8c7e36fc6e30a2b0f4f6da/docs/assets/showcase-authoring-alpha5/project.zip', 'format': 'zip', 'sha256': '77b62ca8cab8eae756120ac91018ea872088a4e9ea8b74e677a296b921e08936', 'size_bytes': 347575, 'root_dir': 'fullbleed-showcase-authoring-alpha5'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'examples/design_showcase/compare_authoring.py', 'preview': 'examples/design_showcase/preview.py'}, 'checks': {'smoke_command': 'python examples/design_showcase/compare_authoring.py --out output', 'expected_outputs': ['output/comparison.json', 'output/html/invoice/invoice.pdf', 'output/components/invoice/invoice.pdf', 'output/html/report/report.pdf', 'output/components/report/report.pdf']}, 'deprecated': False}}}
 PUBLIC_REGISTRY = 'https://raw.githubusercontent.com/fullbleed-engine/fullbleed-manifest/master/manifest.json'
 HISTORICAL_DOCS_COMMIT = 'c7d54e374f6424512f650083664cf3103ef62884'
 HISTORICAL_ARCHIVES = {
@@ -93,12 +94,14 @@ def verify(args):
     expected_files = {}
     for ident, template in templates.items():
         assert len({release['version'] for release in template['releases']}) == len(template['releases'])
-        assert template['latest'] == '0.1.1'
+        assert template['latest'] == '0.1.2'
         assert {release['version'] for release in template['releases']} == set(ENGINE_PINS)
         for release in template['releases']:
             version = release['version']
             assert release['experimental'] and not release['deprecated']
             assert release['fullbleed_version_range'] == '==' + ENGINE_PINS[version]
+            if version in HISTORICAL_RELEASES[ident]:
+                assert release == HISTORICAL_RELEASES[ident][version], 'A historical release identity changed'
             archive = release['archive']
             if version == '0.1.0':
                 folder, root, digest, size = HISTORICAL_ARCHIVES[ident]
@@ -252,7 +255,7 @@ def verify(args):
               'installs': checks, 'integrity_rejection': True, 'existing_files_preserved': True,
               'first_document': first, 'edited_document': edited, 'showcase': rendered,
               'matching_showcase_pages': 4, 'styled_and_unstyled_html': True,
-              'scope': 'Both installer runtimes download and verify both template versions. The latest alpha renders the two current kits; historical 0.1.0 archives are checked and extracted without executing them on a different engine. No general rendering or conformance claim.'}
+              'scope': 'Both installer runtimes download and verify all three template versions. The latest alpha renders the two current kits; historical 0.1.0 and 0.1.1 archives are checked and extracted without executing them on a different engine. No general rendering or conformance claim.'}
     save(out / 'verification.json', result)
     print(json.dumps(result), flush=True)
 
