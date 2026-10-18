@@ -6,12 +6,14 @@ archives below are pinned to an immutable documentation commit.
 
 | Template | Included project | Runtime |
 | --- | --- | --- |
-| `python-components` | First order document, reusable Bootstrap components, report and static catalog | Python component alpha `2.6.0a4` |
-| `component-showcase` | Northstar invoice and Common Ground report in both HTML/CSS and Python components, with a live PDF preview | Python component alpha `2.6.0a4` |
+| `python-components` | First order document, reusable Bootstrap components, report and static catalog | Python component alpha `2.6.0a5` |
+| `component-showcase` | Northstar invoice and Common Ground report in both HTML/CSS and Python components, with a live PDF preview | Python component alpha `2.6.0a5` |
 
 Both templates are **experimental**. They use `fullbleed.ui.experimental`, whose
-API may change. Template version `0.1.0` identifies the project archive; the
+API may change. Template version `0.1.1` identifies the project archive; the
 Fullbleed engine version is separately pinned in `requirements.txt`.
+Version `0.1.0` remains available with its original archive hashes and the
+`2.6.0a4` runtime pin; request it explicitly with `--version 0.1.0`.
 
 ## Create your first component PDF
 
@@ -25,9 +27,9 @@ Activate it with `.venv\Scripts\Activate.ps1` in Windows PowerShell, or
 `source .venv/bin/activate` on macOS/Linux. Then:
 
 ```sh
-python -m pip install --pre "fullbleed==2.6.0a4"
+python -m pip install --pre "fullbleed==2.6.0a5"
 fullbleed new search components
-fullbleed new remote python-components my-report --version 0.1.0
+fullbleed new remote python-components my-report --version 0.1.1
 cd my-report
 python first_document.py
 ```
@@ -42,7 +44,7 @@ The included README explains the report and catalog commands. See the
 With the same alpha installed, choose a new target directory:
 
 ```sh
-fullbleed new remote component-showcase my-documents --version 0.1.0
+fullbleed new remote component-showcase my-documents --version 0.1.1
 cd my-documents
 python examples/design_showcase/preview.py
 ```
@@ -81,11 +83,14 @@ Its original metadata is retained in [legacy/i9-stamped-vdp.json](legacy/i9-stam
 
 ## Verification and updates
 
-CI exercises the published stable `2.5.29` and alpha `2.6.0a4` CLI installers on
+CI exercises the published stable `2.5.31` and alpha `2.6.0a5` CLI installers on
 Windows and Linux with Python 3.10 and 3.14. It checks listing, search, version
-selection, every extracted source file, checksum rejection, preservation of
+selection for both `0.1.0` and `0.1.1`, every extracted source file, checksum
+rejection for the selected latest release, preservation of
 existing files, a real first PDF and edited PDF, and the paired showcase render.
-Rendering the experimental projects explicitly uses the alpha environment.
+Rendering the latest experimental projects explicitly uses the alpha
+`2.6.0a5` environment. The older `0.1.0` archives are downloaded, checked and
+extracted without executing their source on a different engine version.
 
 The archived legacy entry is not executed or qualified for current runtimes.
 Checks for the active kits establish these examples' behavior, not general

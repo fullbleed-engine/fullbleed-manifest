@@ -20,9 +20,17 @@ import urllib.request
 import venv
 import zipfile
 
-VERSIONS = {'stable': '2.5.29', 'alpha': '2.6.0a4'}
+VERSIONS = {'stable': '2.5.31', 'alpha': '2.6.0a5'}
+ENGINE_PINS = {'0.1.0': '2.6.0a4', '0.1.1': VERSIONS['alpha']}
 TEMPLATES = {'python-components', 'component-showcase'}
 PUBLIC_REGISTRY = 'https://raw.githubusercontent.com/fullbleed-engine/fullbleed-manifest/master/manifest.json'
+HISTORICAL_DOCS_COMMIT = 'c7d54e374f6424512f650083664cf3103ef62884'
+HISTORICAL_ARCHIVES = {
+    'python-components': ('bootstrap-alpha4', 'fullbleed-bootstrap-alpha4',
+                          '00c8e79b056f13ba2a7d2ec3a254d3958d3f19dc1a3f7316edf7ac22e631f790', 12880),
+    'component-showcase': ('showcase-authoring', 'fullbleed-showcase-authoring',
+                           'a57fe4c7aa04c94979704edfa00328be67d6dba8bd8909e224e70229f246195e', 347085),
+}
 
 
 def save(path, value):
@@ -85,33 +93,45 @@ def verify(args):
     expected_files = {}
     for ident, template in templates.items():
         assert len({release['version'] for release in template['releases']}) == len(template['releases'])
-        release = next(release for release in template['releases'] if release['version'] == template['latest'])
-        assert release['experimental'] and not release['deprecated']
-        assert release['fullbleed_version_range'] == '==2.6.0a4'
-        archive = release['archive']
-        assert archive['format'] == 'zip'
-        assert re.fullmatch(r'[0-9a-f]{64}', archive['sha256'])
-        assert re.fullmatch(r'https://raw\.githubusercontent\.com/fullbleed-engine/docs/[0-9a-f]{40}/docs/assets/[a-z0-9-]+/project\.zip', archive['url'])
-        data = download(archive['url'])
-        assert len(data) == archive['size_bytes'] and sha256(data).hexdigest() == archive['sha256']
-        local_archive = archives / (ident + '.zip')
-        local_archive.write_bytes(data)
-        prefix = archive['root_dir'] + '/'
-        files = {}
-        with zipfile.ZipFile(local_archive) as contents:
-            assert contents.testzip() is None
-            for member in contents.infolist():
-                if member.is_dir():
-                    continue
-                assert member.filename.startswith(prefix)
-                name = member.filename[len(prefix):]
-                parts = PurePosixPath(name)
-                assert name and not parts.is_absolute() and '..' not in parts.parts and '\\' not in name and ':' not in name
-                assert not stat.S_ISLNK(member.external_attr >> 16) and name not in files
-                files[name] = sha256(contents.read(member)).hexdigest()
-            assert contents.read(prefix + 'requirements.txt').decode().strip() == 'fullbleed==2.6.0a4'
-        assert all(value in files for value in release['entrypoints'].values())
-        releases[ident], expected_files[ident] = release, files
+        assert template['latest'] == '0.1.1'
+        assert {release['version'] for release in template['releases']} == set(ENGINE_PINS)
+        for release in template['releases']:
+            version = release['version']
+            assert release['experimental'] and not release['deprecated']
+            assert release['fullbleed_version_range'] == '==' + ENGINE_PINS[version]
+            archive = release['archive']
+            if version == '0.1.0':
+                folder, root, digest, size = HISTORICAL_ARCHIVES[ident]
+                assert archive == {
+                    'url': f'https://raw.githubusercontent.com/fullbleed-engine/docs/{HISTORICAL_DOCS_COMMIT}/docs/assets/{folder}/project.zip',
+                    'format': 'zip', 'sha256': digest, 'size_bytes': size, 'root_dir': root,
+                }, 'The existing 0.1.0 archive identity changed'
+            assert archive['format'] == 'zip'
+            assert re.fullmatch(r'[0-9a-f]{64}', archive['sha256'])
+            assert re.fullmatch(r'https://raw\.githubusercontent\.com/fullbleed-engine/docs/[0-9a-f]{40}/docs/assets/[a-z0-9-]+/project\.zip', archive['url'])
+            data = download(archive['url'])
+            assert len(data) == archive['size_bytes'] and sha256(data).hexdigest() == archive['sha256']
+            local_archive = archives / (ident + '-' + version + '.zip')
+            local_archive.write_bytes(data)
+            prefix = archive['root_dir'] + '/'
+            files = {}
+            with zipfile.ZipFile(local_archive) as contents:
+                assert contents.testzip() is None
+                for member in contents.infolist():
+                    if member.is_dir():
+                        continue
+                    assert member.filename.startswith(prefix)
+                    name = member.filename[len(prefix):]
+                    parts = PurePosixPath(name)
+                    assert name and not parts.is_absolute() and '..' not in parts.parts and '\\' not in name and ':' not in name
+                    assert not stat.S_ISLNK(member.external_attr >> 16) and name not in files
+                    files[name] = sha256(contents.read(member)).hexdigest()
+                assert contents.read(prefix + 'requirements.txt').decode().strip() == 'fullbleed==' + ENGINE_PINS[version]
+            assert all(value in files for value in release['entrypoints'].values())
+            expected_files[(ident, version)] = files
+            if version == template['latest']:
+                releases[ident] = release
+    save(out / 'source-hashes.json', {ident + '/' + version: files for (ident, version), files in expected_files.items()})
 
     runtimes = {}
     for lane in VERSIONS:
@@ -135,7 +155,9 @@ def verify(args):
     registry_dir.mkdir()
     save(registry_dir / 'manifest.json', manifest)
     broken = json.loads(json.dumps(manifest))
-    broken['templates'][0]['releases'][0]['archive']['sha256'] = '0' * 64
+    broken_template = broken['templates'][0]
+    broken_release = next(release for release in broken_template['releases'] if release['version'] == broken_template['latest'])
+    broken_release['archive']['sha256'] = '0' * 64
     save(registry_dir / 'checksum-mismatch.json', broken)
     checks = []
     with registry_server(registry_dir) as server:
@@ -156,17 +178,23 @@ def verify(args):
             assert listed['ok'] and searched['ok']
             assert {item['id'] for item in listed['templates']} == TEMPLATES
             assert {item['id'] for item in searched['templates']} == TEMPLATES
-            for ident, release in releases.items():
-                target = out / lane / ident
-                dry = cli(lane + '-' + ident + '-dry', lane, 'remote', ident, str(target), '--version', release['version'], '--dry-run')
-                assert dry['ok'] and dry['dry_run'] and not target.exists()
-                assert dry['version'] == release['version'] and dry['archive']['sha256'] == release['archive']['sha256']
-                result = cli(lane + '-' + ident + '-install', lane, 'remote', ident, str(target), '--version', release['version'])
-                assert result['ok'] and not result['dry_run']
-                assert result['version'] == release['version'] and result['entrypoints'] == release['entrypoints']
-                actual = {path.relative_to(target).as_posix(): sha256(path.read_bytes()).hexdigest() for path in target.rglob('*') if path.is_file()}
-                assert actual == expected_files[ident] and result['files_written'] == len(actual)
-                checks.append({'lane': lane, 'template': ident, 'version': result['version'], 'files_identical': len(actual), 'archive_sha256': release['archive']['sha256']})
+            for ident, template in templates.items():
+                latest = cli(lane + '-' + ident + '-latest', lane, 'remote', ident, str(out / lane / ident), '--dry-run')
+                assert latest['ok'] and latest['version'] == template['latest']
+                assert latest['archive']['sha256'] == releases[ident]['archive']['sha256']
+                for release in template['releases']:
+                    version = release['version']
+                    target = out / lane / (ident if version == template['latest'] else ident + '-' + version)
+                    label = lane + '-' + ident + '-' + version
+                    dry = cli(label + '-dry', lane, 'remote', ident, str(target), '--version', version, '--dry-run')
+                    assert dry['ok'] and dry['dry_run'] and not target.exists()
+                    assert dry['version'] == version and dry['archive']['sha256'] == release['archive']['sha256']
+                    result = cli(label + '-install', lane, 'remote', ident, str(target), '--version', version)
+                    assert result['ok'] and not result['dry_run']
+                    assert result['version'] == version and result['entrypoints'] == release['entrypoints']
+                    actual = {path.relative_to(target).as_posix(): sha256(path.read_bytes()).hexdigest() for path in target.rglob('*') if path.is_file()}
+                    assert actual == expected_files[(ident, version)] and result['files_written'] == len(actual)
+                    checks.append({'lane': lane, 'template': ident, 'version': version, 'files_identical': len(actual), 'archive_sha256': release['archive']['sha256']})
 
             sentinel = out / lane / 'existing-project'
             sentinel.mkdir()
@@ -178,7 +206,7 @@ def verify(args):
                            selected_registry=server + '/checksum-mismatch.json', expected=None)
             assert rejected['code'] == 'NEW_REMOTE_FAILED' and 'sha256 mismatch' in rejected['message']
             assert {path.name: path.read_bytes() for path in sentinel.iterdir()} == {'keep.txt': b'Existing author work.\n'}
-            print(json.dumps({'lane': lane, 'installs': len(TEMPLATES), 'existing_files_preserved': True, 'checksum_rejected': True}), flush=True)
+            print(json.dumps({'lane': lane, 'installs': sum(len(template['releases']) for template in templates.values()), 'existing_files_preserved': True, 'checksum_rejected': True}), flush=True)
 
     alpha = runtimes['alpha']
     starter = out / 'alpha/python-components'
@@ -212,7 +240,7 @@ def verify(args):
     showcase = out / 'alpha/component-showcase'
     command('showcase-comparison', [alpha, 'examples/design_showcase/compare_authoring.py', '--out', 'output'], cwd=showcase)
     comparison = json.loads((showcase / 'output/comparison.json').read_text(encoding='utf-8'))
-    assert comparison['ok'] and comparison['engine_version'] == '2.6.0a4'
+    assert comparison['ok'] and comparison['engine_version'] == VERSIONS['alpha']
     rendered = {}
     for lane in ['html', 'components']:
         for document, pages, text in [('invoice', 1, ['Northstar', 'Maple & Finch']), ('report', 3, ['Common Ground'])]:
@@ -224,7 +252,7 @@ def verify(args):
               'installs': checks, 'integrity_rejection': True, 'existing_files_preserved': True,
               'first_document': first, 'edited_document': edited, 'showcase': rendered,
               'matching_showcase_pages': 4, 'styled_and_unstyled_html': True,
-              'scope': 'Installs and renders the two pinned component kits; no general rendering or conformance claim.'}
+              'scope': 'Both installer runtimes download and verify both template versions. The latest alpha renders the two current kits; historical 0.1.0 archives are checked and extracted without executing them on a different engine. No general rendering or conformance claim.'}
     save(out / 'verification.json', result)
     print(json.dumps(result), flush=True)
 
