@@ -20,10 +20,12 @@ import urllib.request
 import venv
 import zipfile
 
-VERSIONS = {'stable': '2.5.32', 'alpha': '2.6.0a6'}
-ENGINE_PINS = {'0.1.0': '2.6.0a4', '0.1.1': '2.6.0a5', '0.1.2': VERSIONS['alpha']}
+VERSIONS = {'stable': '2.5.34', 'alpha': '2.6.0a8'}
+BOOTSTRAP_VERSION = '2.6.0a6'
+LATEST = {'python-components': '0.1.2', 'component-showcase': '0.1.3'}
+ENGINE_PINS = {'0.1.0': '2.6.0a4', '0.1.1': '2.6.0a5', '0.1.2': '2.6.0a6', '0.1.3': '2.6.0a8'}
 TEMPLATES = {'python-components', 'component-showcase'}
-HISTORICAL_RELEASES = {'python-components': {'0.1.0': {'version': '0.1.0', 'published_at': '2026-10-17T17:30:00Z', 'experimental': True, 'fullbleed_version_range': '==2.6.0a4', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/c7d54e374f6424512f650083664cf3103ef62884/docs/assets/bootstrap-alpha4/project.zip', 'format': 'zip', 'sha256': '00c8e79b056f13ba2a7d2ec3a254d3958d3f19dc1a3f7316edf7ac22e631f790', 'size_bytes': 12880, 'root_dir': 'fullbleed-bootstrap-alpha4'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'first_document.py', 'catalog': 'examples/component_bootstrap/main.py'}, 'checks': {'smoke_command': 'python first_document.py', 'expected_outputs': ['order.pdf', 'order.html', 'order.unstyled.html']}, 'deprecated': False}, '0.1.1': {'version': '0.1.1', 'published_at': '2026-10-18T06:43:21.076636+00:00', 'experimental': True, 'fullbleed_version_range': '==2.6.0a5', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/8379d89bd55757e43b8c7e36fc6e30a2b0f4f6da/docs/assets/bootstrap-alpha5/project.zip', 'format': 'zip', 'sha256': 'b47e4c34c51c649700848139562835544b7609844df7cd51d83f80ce64828581', 'size_bytes': 12970, 'root_dir': 'fullbleed-bootstrap-alpha5'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'first_document.py', 'catalog': 'examples/component_bootstrap/main.py'}, 'checks': {'smoke_command': 'python first_document.py', 'expected_outputs': ['order.pdf', 'order.html', 'order.unstyled.html']}, 'deprecated': False}}, 'component-showcase': {'0.1.0': {'version': '0.1.0', 'published_at': '2026-10-17T17:30:00Z', 'experimental': True, 'fullbleed_version_range': '==2.6.0a4', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/c7d54e374f6424512f650083664cf3103ef62884/docs/assets/showcase-authoring/project.zip', 'format': 'zip', 'sha256': 'a57fe4c7aa04c94979704edfa00328be67d6dba8bd8909e224e70229f246195e', 'size_bytes': 347085, 'root_dir': 'fullbleed-showcase-authoring'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'examples/design_showcase/compare_authoring.py', 'preview': 'examples/design_showcase/preview.py'}, 'checks': {'smoke_command': 'python examples/design_showcase/compare_authoring.py --out output', 'expected_outputs': ['output/comparison.json', 'output/html/invoice/invoice.pdf', 'output/components/invoice/invoice.pdf', 'output/html/report/report.pdf', 'output/components/report/report.pdf']}, 'deprecated': False}, '0.1.1': {'version': '0.1.1', 'published_at': '2026-10-18T06:43:21.076636+00:00', 'experimental': True, 'fullbleed_version_range': '==2.6.0a5', 'python_version_range': '>=3.10', 'archive': {'url': 'https://raw.githubusercontent.com/fullbleed-engine/docs/8379d89bd55757e43b8c7e36fc6e30a2b0f4f6da/docs/assets/showcase-authoring-alpha5/project.zip', 'format': 'zip', 'sha256': '77b62ca8cab8eae756120ac91018ea872088a4e9ea8b74e677a296b921e08936', 'size_bytes': 347575, 'root_dir': 'fullbleed-showcase-authoring-alpha5'}, 'entrypoints': {'readme': 'README.md', 'requirements': 'requirements.txt', 'run': 'examples/design_showcase/compare_authoring.py', 'preview': 'examples/design_showcase/preview.py'}, 'checks': {'smoke_command': 'python examples/design_showcase/compare_authoring.py --out output', 'expected_outputs': ['output/comparison.json', 'output/html/invoice/invoice.pdf', 'output/components/invoice/invoice.pdf', 'output/html/report/report.pdf', 'output/components/report/report.pdf']}, 'deprecated': False}}}
+HISTORICAL_RELEASES = json.loads(Path(__file__).with_name('historical-releases.json').read_text(encoding='utf-8'))
 PUBLIC_REGISTRY = 'https://raw.githubusercontent.com/fullbleed-engine/fullbleed-manifest/master/manifest.json'
 HISTORICAL_DOCS_COMMIT = 'c7d54e374f6424512f650083664cf3103ef62884'
 HISTORICAL_ARCHIVES = {
@@ -94,8 +96,9 @@ def verify(args):
     expected_files = {}
     for ident, template in templates.items():
         assert len({release['version'] for release in template['releases']}) == len(template['releases'])
-        assert template['latest'] == '0.1.2'
-        assert {release['version'] for release in template['releases']} == set(ENGINE_PINS)
+        assert template['latest'] == LATEST[ident]
+        expected_versions = set(HISTORICAL_RELEASES[ident]) | {LATEST[ident]}
+        assert {release['version'] for release in template['releases']} == expected_versions
         for release in template['releases']:
             version = release['version']
             assert release['experimental'] and not release['deprecated']
@@ -111,7 +114,11 @@ def verify(args):
                 }, 'The existing 0.1.0 archive identity changed'
             assert archive['format'] == 'zip'
             assert re.fullmatch(r'[0-9a-f]{64}', archive['sha256'])
-            assert re.fullmatch(r'https://raw\.githubusercontent\.com/fullbleed-engine/docs/[0-9a-f]{40}/docs/assets/[a-z0-9-]+/project\.zip', archive['url'])
+            if ident == 'component-showcase' and version == '0.1.3':
+                assert archive['url'] == ('https://github.com/fullbleed-engine/fullbleed-official/releases/'
+                                          'download/v2.6.0a8/fullbleed-component-showcases-2.6.0a8.zip')
+            else:
+                assert re.fullmatch(r'https://raw\.githubusercontent\.com/fullbleed-engine/docs/[0-9a-f]{40}/docs/assets/[a-z0-9-]+/project\.zip', archive['url'])
             data = download(archive['url'])
             assert len(data) == archive['size_bytes'] and sha256(data).hexdigest() == archive['sha256']
             local_archive = archives / (ident + '-' + version + '.zip')
@@ -136,9 +143,7 @@ def verify(args):
                 releases[ident] = release
     save(out / 'source-hashes.json', {ident + '/' + version: files for (ident, version), files in expected_files.items()})
 
-    runtimes = {}
-    for lane in VERSIONS:
-        supplied = getattr(args, lane + '_python')
+    def runtime(lane, pin, supplied, *, reader=False):
         if supplied:
             # Preserve a virtualenv launcher instead of following its Linux symlink.
             python = supplied.absolute()
@@ -146,13 +151,17 @@ def verify(args):
             directory = out / ('runtime-' + lane)
             venv.EnvBuilder(with_pip=True).create(directory)
             python = directory / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
-            packages = ['fullbleed==' + VERSIONS[lane]]
-            if lane == 'alpha':
+            packages = ['fullbleed==' + pin]
+            if reader:
                 packages.append('pypdf==6.19.0')
             command(lane + '-install', [python, '-m', 'pip', 'install', '--only-binary=:all:', *packages], timeout=600)
         actual = json.loads(command(lane + '-version', [python, '-I', '-c', 'import sys,json;from importlib.metadata import version;print(json.dumps({"fullbleed":version("fullbleed"),"python":sys.version.split()[0]}))']))
-        assert actual['fullbleed'] == VERSIONS[lane]
-        runtimes[lane] = python
+        assert actual['fullbleed'] == pin
+        return python
+
+    runtimes = {lane: runtime(lane, pin, getattr(args, lane + '_python'), reader=lane == 'alpha')
+                for lane, pin in VERSIONS.items()}
+    bootstrap = runtime('bootstrap', BOOTSTRAP_VERSION, args.bootstrap_python)
 
     registry_dir = out / 'registry'
     registry_dir.mkdir()
@@ -223,7 +232,7 @@ def verify(args):
         assert all(text in result['text'] for text in required), result
         return {'pages': result['pages'], 'required_text': required, 'pdf_sha256': sha256(pdf.read_bytes()).hexdigest()}
 
-    command('first-document', [alpha, 'first_document.py'], cwd=starter)
+    command('first-document', [bootstrap, 'first_document.py'], cwd=starter)
     first = inspect('first-document-read', starter / 'order.pdf', 1, ['Ready to ship', 'Studio notebook', '$360.00', 'Approved'])
     assert '<style' in (starter / 'order.html').read_text(encoding='utf-8')
     assert '<style' not in (starter / 'order.unstyled.html').read_text(encoding='utf-8')
@@ -234,14 +243,14 @@ def verify(args):
         assert source.count(before) == 1
         source = source.replace(before, after)
     (starter / 'edited_first_document.py').write_text(source, encoding='utf-8')
-    command('edited-first-document', [alpha, 'edited_first_document.py'], cwd=starter)
+    command('edited-first-document', [bootstrap, 'edited_first_document.py'], cwd=starter)
     edited = inspect('edited-first-document-read', starter / 'order.pdf', 1, ['Field journal', '36', '$540.00'])
     assert edited['pdf_sha256'] != first['pdf_sha256']
     for name in ['order.pdf', 'order.html', 'order.unstyled.html']:
         shutil.copyfile(starter / name, evidence / ('edited-' + name))
 
     showcase = out / 'alpha/component-showcase'
-    command('showcase-comparison', [alpha, 'examples/design_showcase/compare_authoring.py', '--out', 'output'], cwd=showcase)
+    command('showcase-comparison', [alpha, releases['component-showcase']['entrypoints']['run'], '--out', 'output'], cwd=showcase)
     comparison = json.loads((showcase / 'output/comparison.json').read_text(encoding='utf-8'))
     assert comparison['ok'] and comparison['engine_version'] == VERSIONS['alpha']
     rendered = {}
@@ -249,13 +258,37 @@ def verify(args):
         for document, pages, text in [('invoice', 1, ['Northstar', 'Maple & Finch']), ('report', 3, ['Common Ground'])]:
             path = showcase / 'output' / lane / document / (document + '.pdf')
             rendered[lane + '/' + document] = inspect('showcase-' + lane + '-' + document, path, pages, text)
+    # These two hashes identify the published, independently validated release PDFs.
+    # Here we check reproduction; this registry verifier does not invoke veraPDF.
+    published_guide_hashes = {
+        'pdfua1': 'faaf5e56e4bc962f4096d6a77deaad176266089548984eda7f45091339ba73d4',
+        'pdfua2': 'b38e8d6008c5474ba8b37ce952a9e65603c03d722390af3273ff048a59af0779',
+    }
+    accessible = {}
+    for profile, expected_hash in published_guide_hashes.items():
+        folder = showcase / 'output' / profile
+        command('guide-' + profile, [alpha, releases['component-showcase']['entrypoints']['accessible'],
+                                    '--pdf-profile', profile, '--out', folder], cwd=showcase)
+        report = json.loads((folder / 'render-report.json').read_text(encoding='utf-8'))
+        assert report['ok'] and report['runtime'] == VERSIONS['alpha'] and report['pdf_profile'] == profile
+        assert report['sha256'] == expected_hash and report['html_css_pdf_byte_parity']
+        pdf = folder / 'common-ground-guide.pdf'
+        checked = inspect('guide-' + profile + '-read', pdf, 2, ['Common Ground'])
+        assert checked['pdf_sha256'] == expected_hash
+        assert '<style' in (folder / 'guide.html').read_text(encoding='utf-8')
+        unstyled = (folder / 'guide-unstyled.html').read_text(encoding='utf-8')
+        assert not re.search(r'<style\b|\sstyle\s*=|<link\b|<script\b', unstyled, re.I)
+        accessible[profile] = checked | {'published_release_pdf_reproduced': True, 'source_gate': True}
+
     result = {'ok': True, 'checked_at': datetime.now(timezone.utc).isoformat(), 'platform': sys.platform,
               'python': sys.version.split()[0], 'installer_versions': VERSIONS,
               'registry': registry or PUBLIC_REGISTRY, 'default_registry': args.default_registry,
               'installs': checks, 'integrity_rejection': True, 'existing_files_preserved': True,
               'first_document': first, 'edited_document': edited, 'showcase': rendered,
+              'accessible_guide': accessible,
+              'render_versions': {'python-components': BOOTSTRAP_VERSION, 'component-showcase': VERSIONS['alpha']},
               'matching_showcase_pages': 4, 'styled_and_unstyled_html': True,
-              'scope': 'Both installer runtimes download and verify all three template versions. The latest alpha renders the two current kits; historical 0.1.0 and 0.1.1 archives are checked and extracted without executing them on a different engine. No general rendering or conformance claim.'}
+              'scope': 'Both installer runtimes verify and extract all seven template releases. Each current project renders with its exact engine pin. The new showcase reproduces both published accessible-guide PDFs and checks exported HTML. Historical archives are not executed with a different engine. This is reproduction evidence, not a new independent PDF/UA validation or a general conformance claim.'}
     save(out / 'verification.json', result)
     print(json.dumps(result), flush=True)
 
@@ -266,6 +299,7 @@ def main():
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--stable-python', type=Path)
     parser.add_argument('--alpha-python', type=Path)
+    parser.add_argument('--bootstrap-python', type=Path)
     origin = parser.add_mutually_exclusive_group()
     origin.add_argument('--registry-url')
     origin.add_argument('--default-registry', action='store_true')
