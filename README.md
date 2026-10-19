@@ -8,11 +8,11 @@ verified against their recorded content hashes.
 | Template | Included project | Runtime |
 | --- | --- | --- |
 | `python-components` | First order document, reusable Bootstrap components, report and static catalog | Python component alpha `2.6.0a6` |
-| `component-showcase` | Northstar invoice and Common Ground report in both authoring paths, plus the accessible community guide | Python component alpha `2.6.0a8` |
+| `component-showcase` | Northstar invoice and Common Ground report in both authoring paths, plus the accessible guide and numbered field-notes report | Python component alpha `2.6.0a9` |
 
 Both templates are **experimental**. They use `fullbleed.ui.experimental`, whose
 API may change. Project versions and engine versions are separate: the current
-showcase is template `0.1.3`, while the smaller Bootstrap starter remains `0.1.2`.
+showcase is template `0.1.4`, while the smaller Bootstrap starter remains `0.1.2`.
 Each project's `requirements.txt` pins its tested engine. All earlier template
 versions remain available with their original source bytes, hashes and runtime
 pins; choose one explicitly with `--version`.
@@ -47,9 +47,10 @@ Use the existing stable or alpha CLI to download the current kit into a new
 directory, then install its exact requirements in a virtual environment:
 
 ```sh
-fullbleed new remote component-showcase my-documents --version 0.1.3
+fullbleed new remote component-showcase my-documents --version 0.1.4
 cd my-documents
 python -m pip install -r requirements.txt
+python component_page_bands/render.py --out output/field-notes --pdf-profile pdfua2
 python design_showcase/compare_authoring.py --out output/paired
 python accessible_showcase/render.py --out output/accessible-ua1
 python accessible_showcase/render.py --pdf-profile pdfua2 --out output/accessible-ua2
@@ -59,10 +60,12 @@ The paired command creates the invoice and report through both authoring paths,
 compares their PDF pages, and writes styled and unstyled HTML. The guide commands
 produce `common-ground-guide.pdf` and HTML exports in their output directories.
 Edit `design_showcase/data.json`, reuse the Python components, or change their
-styles. Version `0.1.3` uses `design_showcase/` and `accessible_showcase/` at the
-project root; older showcase kits keep their original `examples/` paths.
+styles. The field-notes report shares themed components between its body, header and
+footer and writes final page values such as `1 / 3`. Edit `component_page_bands/report.py`.
+Versions `0.1.3` and `0.1.4` use source folders at the project root; earlier showcase
+kits keep their original `examples/` paths.
 
-The [current showcase guide](https://docs.fullbleed.dev/guides/component-preview-8/)
+The [current showcase guide](https://docs.fullbleed.dev/guides/component-preview-9/)
 explains the source, `class_name`, styling and export options. The invoice and
 report are fixed A4 compositions; review the layout after substantial content
 growth. Bootstrap components and exported HTML use static authored states.
@@ -85,17 +88,17 @@ Its original metadata is retained in [legacy/i9-stamped-vdp.json](legacy/i9-stam
 
 ## Verification and updates
 
-CI exercises the published stable `2.5.34` and alpha `2.6.0a8` CLI installers on
+CI exercises the published stable `2.5.34` and alpha `2.6.0a9` CLI installers on
 Windows and Linux with Python 3.10 and 3.14. It checks listing, search, version
-selection for all seven releases across the two templates, every extracted source file, checksum
+selection for all eight releases across the two templates, every extracted source file, checksum
 rejection for the selected latest release, preservation of
 existing files, a real first PDF and edited PDF, the paired showcase render,
-and both accessible-guide profiles. The Bootstrap starter renders on its pinned
-`2.6.0a6`; the current showcase renders on `2.6.0a8`. Historical archives are
+both accessible-guide profiles, and all three field-notes profiles with finalized page counts and styled/unstyled HTML. The Bootstrap starter renders on its pinned
+`2.6.0a6`; the current showcase renders on `2.6.0a9`. Historical archives are
 downloaded, checked and extracted without executing them on a different engine.
 
 The guide PDFs must reproduce the exact hashes independently validated for the
-[2.6.0a8 release](https://github.com/fullbleed-engine/fullbleed-official/releases/tag/v2.6.0a8).
+[2.6.0a9 release](https://github.com/fullbleed-engine/fullbleed-official/releases/tag/v2.6.0a9).
 Registry CI checks that reproduction and Fullbleed diagnostics; it does not run
 an independent PDF/UA validator. Human assistive-technology usability remains
 unverified.
