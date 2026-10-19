@@ -20,10 +20,10 @@ import urllib.request
 import venv
 import zipfile
 
-VERSIONS = {'stable': '2.5.34', 'alpha': '2.6.0a8'}
+VERSIONS = {'stable': '2.5.34', 'alpha': '2.6.0a9'}
 BOOTSTRAP_VERSION = '2.6.0a6'
-LATEST = {'python-components': '0.1.2', 'component-showcase': '0.1.3'}
-ENGINE_PINS = {'0.1.0': '2.6.0a4', '0.1.1': '2.6.0a5', '0.1.2': '2.6.0a6', '0.1.3': '2.6.0a8'}
+LATEST = {'python-components': '0.1.2', 'component-showcase': '0.1.4'}
+ENGINE_PINS = {'0.1.0': '2.6.0a4', '0.1.1': '2.6.0a5', '0.1.2': '2.6.0a6', '0.1.3': '2.6.0a8', '0.1.4': '2.6.0a9'}
 TEMPLATES = {'python-components', 'component-showcase'}
 HISTORICAL_RELEASES = json.loads(Path(__file__).with_name('historical-releases.json').read_text(encoding='utf-8'))
 PUBLIC_REGISTRY = 'https://raw.githubusercontent.com/fullbleed-engine/fullbleed-manifest/master/manifest.json'
@@ -114,9 +114,10 @@ def verify(args):
                 }, 'The existing 0.1.0 archive identity changed'
             assert archive['format'] == 'zip'
             assert re.fullmatch(r'[0-9a-f]{64}', archive['sha256'])
-            if ident == 'component-showcase' and version == '0.1.3':
+            if ident == 'component-showcase' and version in ('0.1.3', '0.1.4'):
+                pin = ENGINE_PINS[version]
                 assert archive['url'] == ('https://github.com/fullbleed-engine/fullbleed-official/releases/'
-                                          'download/v2.6.0a8/fullbleed-component-showcases-2.6.0a8.zip')
+                                          f'download/v{pin}/fullbleed-component-showcases-{pin}.zip')
             else:
                 assert re.fullmatch(r'https://raw\.githubusercontent\.com/fullbleed-engine/docs/[0-9a-f]{40}/docs/assets/[a-z0-9-]+/project\.zip', archive['url'])
             data = download(archive['url'])
@@ -280,15 +281,41 @@ def verify(args):
         assert not re.search(r'<style\b|\sstyle\s*=|<link\b|<script\b', unstyled, re.I)
         accessible[profile] = checked | {'published_release_pdf_reproduced': True, 'source_gate': True}
 
+    # These saved specimen hashes tie reproduction to the independently checked
+    # release evidence. This verifier does not rerun a standards validator.
+    field_notes_hashes = {
+        'tagged': '553ade393a6b501d43f01d808619dac2b95222d1c76f1f36cab59aa48cab6009',
+        'pdfua1': 'da8e306fe365ea71b17a1808987ba44ff737a361abff242f7ffd47b1eca44294',
+        'pdfua2': 'eb8f7c2b4fb5e123feb46a99e0521a7ab04181c0847c675076fe759e2d4bbf94',
+    }
+    page_bands = {}
+    for profile, digest in field_notes_hashes.items():
+        folder = showcase / 'output' / ('field-notes-' + profile)
+        command('field-notes-' + profile, [alpha, releases['component-showcase']['entrypoints']['page_bands'],
+                                         '--pdf-profile', profile, '--out', folder], cwd=showcase)
+        report = json.loads((folder / 'render-report.json').read_text(encoding='utf-8'))
+        assert report['runtime'] == VERSIONS['alpha'] and report['pdf_profile'] == profile
+        assert report['pdf_sha256'] == digest and report['page_count'] == 3
+        assert report['deterministic'] and report['html_css_byte_parity']
+        checked = inspect('field-notes-' + profile + '-read', folder / 'field-notes.pdf', 3,
+                          ['Common Ground', '1 / 3', '2 / 3', '3 / 3'])
+        assert checked['pdf_sha256'] == digest
+        styled = (folder / 'field-notes.html').read_text(encoding='utf-8')
+        unstyled = (folder / 'field-notes-unstyled.html').read_text(encoding='utf-8')
+        assert '<style' in styled and '[page]' in styled and '[pages]' in styled
+        assert '[page]' in unstyled and '[pages]' in unstyled
+        assert not re.search(r'<style\b|\sstyle\s*=|<link\b|<script\b', unstyled, re.I)
+        page_bands[profile] = checked | {'published_release_pdf_reproduced': True, 'html_exports_checked': True}
+
     result = {'ok': True, 'checked_at': datetime.now(timezone.utc).isoformat(), 'platform': sys.platform,
               'python': sys.version.split()[0], 'installer_versions': VERSIONS,
               'registry': registry or PUBLIC_REGISTRY, 'default_registry': args.default_registry,
               'installs': checks, 'integrity_rejection': True, 'existing_files_preserved': True,
               'first_document': first, 'edited_document': edited, 'showcase': rendered,
-              'accessible_guide': accessible,
+              'accessible_guide': accessible, 'page_bands': page_bands,
               'render_versions': {'python-components': BOOTSTRAP_VERSION, 'component-showcase': VERSIONS['alpha']},
               'matching_showcase_pages': 4, 'styled_and_unstyled_html': True,
-              'scope': 'Both installer runtimes verify and extract all seven template releases. Each current project renders with its exact engine pin. The new showcase reproduces both published accessible-guide PDFs and checks exported HTML. Historical archives are not executed with a different engine. This is reproduction evidence, not a new independent PDF/UA validation or a general conformance claim.'}
+              'scope': 'Both installer runtimes verify and extract all eight template releases. Each current project renders with its exact engine pin. The current showcase reproduces both published accessible-guide PDFs and three field-notes profiles, including finalized page counts and HTML exports. Historical archives are not executed with a different engine. This is reproduction evidence, not a new independent PDF/UA validation or a general conformance claim.'}
     save(out / 'verification.json', result)
     print(json.dumps(result), flush=True)
 

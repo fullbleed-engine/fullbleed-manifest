@@ -181,6 +181,38 @@
         ]
       },
       "deprecated": false
+    },
+    "0.1.3": {
+      "version": "0.1.3",
+      "published_at": "2026-10-19T10:32:54.428613+00:00",
+      "experimental": true,
+      "fullbleed_version_range": "==2.6.0a8",
+      "python_version_range": ">=3.10",
+      "archive": {
+        "url": "https://github.com/fullbleed-engine/fullbleed-official/releases/download/v2.6.0a8/fullbleed-component-showcases-2.6.0a8.zip",
+        "format": "zip",
+        "sha256": "e5cbacb2c6cc337e13c5a0fb960f7156e3b8ec2a407bfc2c1754d4d547cd043a",
+        "size_bytes": 220659,
+        "root_dir": "fullbleed-component-showcases-2.6.0a8"
+      },
+      "entrypoints": {
+        "readme": "README.md",
+        "requirements": "requirements.txt",
+        "run": "design_showcase/compare_authoring.py",
+        "preview": "design_showcase/preview.py",
+        "accessible": "accessible_showcase/render.py"
+      },
+      "checks": {
+        "smoke_command": "python design_showcase/compare_authoring.py --out output",
+        "expected_outputs": [
+          "output/comparison.json",
+          "output/html/invoice/invoice.pdf",
+          "output/components/invoice/invoice.pdf",
+          "output/html/report/report.pdf",
+          "output/components/report/report.pdf"
+        ]
+      },
+      "deprecated": false
     }
   }
 }
